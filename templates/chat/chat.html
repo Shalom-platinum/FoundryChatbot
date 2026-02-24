@@ -1,0 +1,1148 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if current_conversation %}{{ current_conversation.title }}{% else %}New Chat{% endif %} - Foundry Chat{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .app-container {
+        width: 100vw;
+        height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 280px;
+        min-width: 280px;
+        background-color: var(--bg-secondary);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+        z-index: 10;
+    }
+
+    .sidebar-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+    }
+
+    .new-chat-btn {
+        width: 100%;
+        padding: 12px 16px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+
+    .new-chat-btn:hover {
+        background-color: var(--border-color);
+    }
+
+    .sidebar-section {
+        padding: 12px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .section-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        padding: 8px 12px;
+        letter-spacing: 0.5px;
+    }
+
+    .conversation-list {
+        list-style: none;
+    }
+
+    .conversation-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        gap: 8px;
+        margin-bottom: 2px;
+    }
+
+    .conversation-item:hover {
+        background-color: var(--bg-tertiary);
+    }
+
+    .conversation-item.active {
+        background-color: var(--bg-tertiary);
+    }
+
+    .conversation-item a {
+        flex: 1;
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .conversation-item .actions {
+        display: none;
+        gap: 4px;
+    }
+
+    .conversation-item:hover .actions {
+        display: flex;
+    }
+
+    .conversation-item .action-btn {
+        padding: 4px;
+        border-radius: 4px;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+    }
+
+    .conversation-item .action-btn:hover {
+        background-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .sidebar-footer {
+        padding: 16px;
+        border-top: 1px solid var(--border-color);
+        flex-shrink: 0;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        background-color: var(--accent-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .user-name {
+        flex: 1;
+        font-weight: 500;
+    }
+
+    .user-links {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .user-links a {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .user-links a:hover {
+        color: var(--accent-color);
+    }
+
+    /* Model Selector */
+    .model-selector {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+    }
+
+    .model-selector label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+
+    .model-selector select {
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    /* Agent Toggle */
+    .agent-toggles {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+    }
+
+    .agent-toggles label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+
+    .toggle-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0;
+    }
+
+    .toggle-item span {
+        font-size: 13px;
+    }
+
+    .toggle-switch {
+        position: relative;
+        width: 40px;
+        height: 22px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--bg-tertiary);
+        border-radius: 22px;
+        transition: 0.3s;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        border-radius: 50%;
+        transition: 0.3s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background-color: var(--accent-color);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(18px);
+    }
+
+    /* Main Content */
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        height: 100vh;
+    }
+
+    /* Chat Messages */
+    .chat-container {
+        margin-left: 280px;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 24px;
+    }
+
+    .mobile-header {
+        display: none;
+    }
+
+    .messages-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 24px;
+    }
+
+    .empty-state h2 {
+        font-size: 24px;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        font-size: 16px;
+        max-width: 400px;
+    }
+
+    .message {
+        padding: 20px 24px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+    }
+
+    .message.user {
+        background-color: var(--user-bg);
+    }
+
+    .message.assistant {
+        background-color: transparent;
+        border: 1px solid var(--border-color);
+    }
+
+    .message-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .message-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .message.user .message-avatar {
+        background-color: var(--accent-color);
+    }
+
+    .message.assistant .message-avatar {
+        background-color: var(--bg-tertiary);
+    }
+
+    .message-role {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .message-time {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-left: auto;
+    }
+
+    .message-content {
+        font-size: 15px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .message-content code {
+        background-color: var(--bg-tertiary);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+        font-size: 13px;
+    }
+
+    .message-content pre {
+        background-color: var(--bg-tertiary);
+        padding: 16px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 12px 0;
+    }
+
+    .message-content pre code {
+        background: none;
+        padding: 0;
+    }
+
+    .tool-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: var(--bg-tertiary);
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 12px;
+    }
+
+    .tool-indicator.success {
+        color: var(--success-color);
+    }
+
+    /* Input Area */
+    .input-area {
+        flex-shrink: 0;
+        padding: 16px 24px 24px;
+        border-top: 1px solid var(--border-color);
+        background-color: var(--bg-primary);
+    }
+
+    .input-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .input-container {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 12px 16px;
+        transition: border-color 0.2s;
+    }
+
+    .input-container:focus-within {
+        border-color: var(--accent-color);
+    }
+
+    .input-container textarea {
+        flex: 1;
+        background: none;
+        border: none;
+        resize: none;
+        padding: 0;
+        min-height: 24px;
+        max-height: 200px;
+        font-size: 15px;
+        line-height: 1.5;
+    }
+
+    .input-container textarea:focus {
+        outline: none;
+    }
+
+    .send-btn {
+        width: 40px;
+        height: 40px;
+        background-color: var(--accent-color);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .send-btn:disabled {
+        background-color: var(--bg-tertiary);
+        cursor: not-allowed;
+    }
+
+    .upload-btn {
+        width: 40px;
+        height: 40px;
+        background-color: var(--bg-tertiary);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        font-size: 18px;
+        transition: all 0.2s;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+    .upload-btn:hover {
+        background-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .file-preview {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--bg-tertiary);
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+
+    .file-preview .file-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .file-preview .remove-file {
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px;
+    }
+
+    .file-preview .remove-file:hover {
+        color: var(--danger-color);
+    }
+
+    .input-hint {
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+    }
+
+    /* Loading States */
+    .loading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+    }
+
+    .loading-dots {
+        display: flex;
+        gap: 4px;
+    }
+
+    .loading-dots span {
+        width: 6px;
+        height: 6px;
+        background-color: var(--text-secondary);
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .sidebar {
+            left: -280px;
+            transition: left 0.3s;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .chat-container {
+            margin-left: 0;
+        }
+
+        .mobile-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .menu-btn {
+            font-size: 24px;
+            color: var(--text-primary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 12px;
+        }
+
+        .mobile-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="new-chat-btn" onclick="newConversation()">
+                <span>➕</span>
+                <span>New Chat</span>
+            </button>
+        </div>
+
+        <!-- Model Selector -->
+        <div class="model-selector">
+            <label>Model</label>
+            <select id="model-select">
+                {% for model in models %}
+                <option value="{{ model.alias }}" 
+                    {% if current_conversation and current_conversation.model_used == model.alias %}selected{% endif %}
+                    {% if not current_conversation and settings.default_model == model.alias %}selected{% endif %}>
+                    {{ model.alias }}
+                </option>
+                {% empty %}
+                <option value="phi-4-mini">phi-4-mini (default)</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Agent Toggles -->
+        <div class="agent-toggles">
+            <label>Agents</label>
+            <div class="toggle-item">
+                <span>🔍 Web Search</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="web-search-toggle" {% if settings.enable_web_search %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-item">
+                <span>💻 Code Execution</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="code-exec-toggle" {% if settings.enable_code_execution %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Conversations List -->
+        <div class="sidebar-section">
+            <div class="section-title">Recent Chats</div>
+            <ul class="conversation-list" id="conversation-list">
+                {% for conv in conversations %}
+                <li class="conversation-item {% if current_conversation and current_conversation.id == conv.id %}active{% endif %}"
+                    data-id="{{ conv.id }}">
+                    <a href="{% url 'chat_detail' conv.id %}">{{ conv.title }}</a>
+                    <div class="actions">
+                        <button class="action-btn" onclick="renameConversation('{{ conv.id }}')" title="Rename">✏️</button>
+                        <button class="action-btn" onclick="deleteConversation('{{ conv.id }}')" title="Delete">🗑️</button>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="conversation-item" style="color: var(--text-secondary); pointer-events: none;">
+                    No conversations yet
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- User Info -->
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.username|first|upper }}</div>
+                <div class="user-name">{{ user.username }}</div>
+            </div>
+            <div class="user-links">
+                <a href="{% url 'settings' %}">⚙️ Settings</a>
+                <a href="{% url 'logout' %}">🚪 Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Chat Messages -->
+        <div class="chat-container" id="chat-container">
+            <div class="mobile-header">
+                <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+                <h1>{% if current_conversation %}{{ current_conversation.title }}{% else %}New Chat{% endif %}</h1>
+            </div>
+            <div class="messages-wrapper" id="messages">
+                {% if messages %}
+                    {% for msg in messages %}
+                    <div class="message {{ msg.role }}">
+                        <div class="message-header">
+                            <div class="message-avatar">
+                                {% if msg.role == 'user' %}👤{% else %}🤖{% endif %}
+                            </div>
+                            <span class="message-role">{% if msg.role == 'user' %}You{% else %}Assistant{% endif %}</span>
+                            <span class="message-time">{{ msg.created_at|date:"H:i" }}</span>
+                        </div>
+                        <div class="message-content">{{ msg.content }}</div>
+                        {% if msg.tool_calls %}
+                        <div class="tool-indicator success">
+                            🔧 Used: {% for tool in msg.tool_calls %}{{ tool.tool }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🤖</div>
+                        <h2>Start a conversation</h2>
+                        <p>Ask me anything, summarize text, or upload a file. I can also search the web and run code if you enable those features.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <div id="file-preview-container"></div>
+                <div class="input-container">
+                    <input type="file" id="file-input" class="file-input" 
+                           accept=".txt,.md,.csv,.json,.py,.js,.html,.css,.xml,.log"
+                           onchange="handleFileSelect(event)">
+                    <label for="file-input" class="upload-btn" title="Upload file">
+                        📎
+                    </label>
+                    <textarea 
+                        id="message-input" 
+                        placeholder="Message Foundry Chat..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResize(this)"></textarea>
+                    <button class="send-btn" id="send-btn" onclick="sendMessage()">
+                        ➤
+                    </button>
+                </div>
+                <div class="input-hint">
+                    Press Enter to send, Shift+Enter for new line. Click 📎 to upload a file.
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentConversationId = {% if current_conversation %}'{{ current_conversation.id }}'{% else %}null{% endif %};
+    let isProcessing = false;
+
+    // Toggle sidebar for mobile
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('open');
+    }
+
+    // Auto-resize textarea
+    function autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    }
+
+    // Handle keyboard shortcuts
+    function handleKeyDown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    }
+
+    // Scroll to bottom of chat
+    function scrollToBottom() {
+        const container = document.getElementById('chat-container');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Add message to UI
+    function addMessage(role, content, toolCalls = null) {
+        const messagesDiv = document.getElementById('messages');
+        const emptyState = messagesDiv.querySelector('.empty-state');
+        if (emptyState) {
+            emptyState.remove();
+        }
+
+        const now = new Date();
+        const time = now.getHours().toString().padStart(2, '0') + ':' + 
+                     now.getMinutes().toString().padStart(2, '0');
+
+        const messageHtml = `
+            <div class="message ${role}">
+                <div class="message-header">
+                    <div class="message-avatar">${role === 'user' ? '👤' : '🤖'}</div>
+                    <span class="message-role">${role === 'user' ? 'You' : 'Assistant'}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-content">${escapeHtml(content)}</div>
+                ${toolCalls ? `
+                    <div class="tool-indicator success">
+                        🔧 Used: ${toolCalls.map(t => t.tool).join(', ')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        messagesDiv.insertAdjacentHTML('beforeend', messageHtml);
+        scrollToBottom();
+    }
+
+    // Add loading indicator
+    function addLoadingIndicator() {
+        const messagesDiv = document.getElementById('messages');
+        const loadingHtml = `
+            <div class="message assistant" id="loading-message">
+                <div class="message-header">
+                    <div class="message-avatar">🤖</div>
+                    <span class="message-role">Assistant</span>
+                </div>
+                <div class="loading">
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span>Thinking...</span>
+                </div>
+            </div>
+        `;
+        messagesDiv.insertAdjacentHTML('beforeend', loadingHtml);
+        scrollToBottom();
+    }
+
+    function removeLoadingIndicator() {
+        const loading = document.getElementById('loading-message');
+        if (loading) loading.remove();
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Send message
+    async function sendMessage() {
+        const input = document.getElementById('message-input');
+        const message = input.value.trim();
+
+        if (!message || isProcessing) return;
+
+        isProcessing = true;
+        const sendBtn = document.getElementById('send-btn');
+        sendBtn.disabled = true;
+
+        // Add user message to UI
+        addMessage('user', message);
+        input.value = '';
+        autoResize(input);
+
+        // Add loading indicator
+        addLoadingIndicator();
+
+        try {
+            const response = await fetch('{% url "ajax_send_message" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    message: message,
+                    conversation_id: currentConversationId,
+                    model: document.getElementById('model-select').value,
+                    use_web_search: document.getElementById('web-search-toggle').checked,
+                    use_code_execution: document.getElementById('code-exec-toggle').checked
+                })
+            });
+
+            const data = await response.json();
+
+            removeLoadingIndicator();
+
+            if (data.success) {
+                // Update conversation ID if new
+                if (!currentConversationId) {
+                    currentConversationId = data.conversation_id;
+                    // Update URL without reload
+                    history.pushState({}, '', `/chat/${data.conversation_id}/`);
+                    // Refresh sidebar
+                    location.reload();
+                }
+
+                addMessage('assistant', data.assistant_message.content, data.tool_calls);
+            } else {
+                addMessage('assistant', `Error: ${data.error}`);
+            }
+        } catch (error) {
+            removeLoadingIndicator();
+            addMessage('assistant', `Error: ${error.message}`);
+        }
+
+        isProcessing = false;
+        sendBtn.disabled = false;
+        input.focus();
+    }
+
+    // New conversation
+    async function newConversation() {
+        currentConversationId = null;
+        history.pushState({}, '', '/');
+        
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🤖</div>
+                <h2>Start a conversation</h2>
+                <p>Ask me anything, summarize text, or upload a file. I can also search the web and run code if you enable those features.</p>
+            </div>
+        `;
+
+        // Remove active class from all conversations
+        document.querySelectorAll('.conversation-item').forEach(item => {
+            item.classList.remove('active');
+        });
+    }
+
+    // Delete conversation
+    async function deleteConversation(id) {
+        if (!confirm('Are you sure you want to delete this conversation?')) return;
+
+        try {
+            const response = await fetch(`/ajax/conversation/${id}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            });
+
+            if (response.ok) {
+                const item = document.querySelector(`[data-id="${id}"]`);
+                if (item) item.remove();
+                
+                if (currentConversationId === id) {
+                    newConversation();
+                }
+            }
+        } catch (error) {
+            alert('Failed to delete conversation');
+        }
+    }
+
+    // Rename conversation
+    async function renameConversation(id) {
+        const newTitle = prompt('Enter new title:');
+        if (!newTitle) return;
+
+        try {
+            const response = await fetch(`/ajax/conversation/${id}/rename/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ title: newTitle })
+            });
+
+            if (response.ok) {
+                const item = document.querySelector(`[data-id="${id}"] a`);
+                if (item) item.textContent = newTitle;
+            }
+        } catch (error) {
+            alert('Failed to rename conversation');
+        }
+    }
+
+    // File upload handling
+    let selectedFile = null;
+    let uploadedFileId = null;
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        selectedFile = file;
+        showFilePreview(file);
+    }
+
+    function showFilePreview(file) {
+        const container = document.getElementById('file-preview-container');
+        container.innerHTML = `
+            <div class="file-preview">
+                <span>📄</span>
+                <span class="file-name">${file.name}</span>
+                <span class="remove-file" onclick="removeFile()">✕</span>
+            </div>
+        `;
+    }
+
+    function removeFile() {
+        selectedFile = null;
+        uploadedFileId = null;
+        document.getElementById('file-input').value = '';
+        document.getElementById('file-preview-container').innerHTML = '';
+    }
+
+    async function uploadFile() {
+        if (!selectedFile) return null;
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        if (currentConversationId) {
+            formData.append('conversation_id', currentConversationId);
+        }
+
+        try {
+            const response = await fetch('{% url "upload_file" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data;
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('File upload error:', error);
+            throw error;
+        }
+    }
+
+    // Modified send message to handle file uploads
+    const originalSendMessage = sendMessage;
+    sendMessage = async function() {
+        const input = document.getElementById('message-input');
+        let message = input.value.trim();
+
+        // If there's a file but no message, create a default message
+        if (selectedFile && !message) {
+            message = `Please summarize this file: ${selectedFile.name}`;
+        }
+
+        if (!message && !selectedFile) return;
+        if (isProcessing) return;
+
+        isProcessing = true;
+        const sendBtn = document.getElementById('send-btn');
+        sendBtn.disabled = true;
+
+        // Handle file upload first if there's a file
+        let fileContent = null;
+        if (selectedFile) {
+            try {
+                addMessage('user', `📎 Uploading ${selectedFile.name}...`);
+                const uploadResult = await uploadFile();
+                fileContent = uploadResult.extracted_text;
+                uploadedFileId = uploadResult.id;
+                
+                // Update the message to include file content
+                if (fileContent) {
+                    message = `[File: ${selectedFile.name}]\n\nFile content:\n${fileContent.substring(0, 5000)}${fileContent.length > 5000 ? '\n...(truncated)' : ''}\n\nUser request: ${message}`;
+                }
+                
+                removeFile();
+            } catch (error) {
+                removeLoadingIndicator();
+                addMessage('assistant', `Error uploading file: ${error.message}`);
+                isProcessing = false;
+                sendBtn.disabled = false;
+                return;
+            }
+        }
+
+        // Add user message to UI (show original input, not the full content with file)
+        const displayMessage = input.value.trim() || `Please summarize: ${selectedFile?.name || 'file'}`;
+        
+        // Remove the "uploading" message if we added one
+        const messages = document.getElementById('messages');
+        const lastMessage = messages.querySelector('.message:last-child');
+        if (lastMessage && lastMessage.textContent.includes('Uploading')) {
+            lastMessage.remove();
+        }
+        
+        addMessage('user', displayMessage);
+        input.value = '';
+        autoResize(input);
+
+        // Add loading indicator
+        addLoadingIndicator();
+
+        try {
+            const response = await fetch('{% url "ajax_send_message" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    message: message,
+                    conversation_id: currentConversationId,
+                    model: document.getElementById('model-select').value,
+                    use_web_search: document.getElementById('web-search-toggle').checked,
+                    use_code_execution: document.getElementById('code-exec-toggle').checked
+                })
+            });
+
+            const data = await response.json();
+
+            removeLoadingIndicator();
+
+            if (data.success) {
+                // Update conversation ID if new
+                if (!currentConversationId) {
+                    currentConversationId = data.conversation_id;
+                    // Update URL without reload
+                    history.pushState({}, '', `/chat/${data.conversation_id}/`);
+                    // Refresh sidebar
+                    location.reload();
+                }
+
+                addMessage('assistant', data.assistant_message.content, data.tool_calls);
+            } else {
+                addMessage('assistant', `Error: ${data.error}`);
+            }
+        } catch (error) {
+            removeLoadingIndicator();
+            addMessage('assistant', `Error: ${error.message}`);
+        }
+
+        isProcessing = false;
+        sendBtn.disabled = false;
+        input.focus();
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        scrollToBottom();
+        document.getElementById('message-input').focus();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+#generate the usual .gitignore file for a django application, but also include the .env file which contains sensitive information such as API keys and database credentials.
+# .gitignore for a Django application
+# Ignore Python bytecode files
+__pycache__/    
+*.py[cod]
+# Ignore virtual environment directories
+venv/
+env/
+# Ignore Django migration files
+*/migrations/
+# Ignore database files
+# Ignore environment files (contains sensitive information)
+.env

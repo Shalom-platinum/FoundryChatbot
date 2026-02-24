@@ -1,0 +1,17 @@
+# Django and REST Framework
+Django>=5.0
+djangorestframework>=3.14
+djangorestframework-simplejwt>=5.3
+django-cors-headers>=4.3
+
+# AI/ML
+openai>=1.40
+foundry-local-sdk>=0.5
+
+# Agentic tools
+requests>=2.32
+beautifulsoup4>=4.12
+duckduckgo-search>=6.0
+
+# Utilities
+python-dotenv>=1.0

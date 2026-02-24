@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - Foundry Chat{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .settings-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 24px;
+    }
+
+    .settings-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .back-btn {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--bg-secondary);
+        border-radius: 10px;
+        color: var(--text-primary);
+        font-size: 20px;
+        transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+        background-color: var(--bg-tertiary);
+    }
+
+    .settings-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .settings-section {
+        background-color: var(--bg-secondary);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+    }
+
+    .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .form-group .help-text {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 6px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent-color);
+    }
+
+    .checkbox-group label {
+        margin-bottom: 0;
+        cursor: pointer;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .success-message {
+        background-color: rgba(34, 197, 94, 0.1);
+        border: 1px solid var(--success-color);
+        color: var(--success-color);
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .provider-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 12px;
+    }
+
+    .provider-card:hover {
+        border-color: var(--accent-color);
+        background-color: rgba(99, 102, 241, 0.05);
+    }
+
+    .provider-card.selected {
+        border-color: var(--accent-color);
+        background-color: rgba(99, 102, 241, 0.1);
+    }
+
+    .provider-card input[type="radio"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--accent-color);
+    }
+
+    .provider-info {
+        flex: 1;
+    }
+
+    .provider-name {
+        font-weight: 600;
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+    .provider-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .provider-status {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .provider-status.available {
+        background-color: rgba(34, 197, 94, 0.1);
+        color: var(--success-color);
+    }
+
+    .provider-status.unavailable {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--error-color);
+    }
+
+    .azure-config {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: var(--bg-tertiary);
+        border-radius: 12px;
+        display: none;
+    }
+
+    .azure-config.visible {
+        display: block;
+    }
+
+    .azure-config-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+    }
+
+    .info-box {
+        padding: 12px 16px;
+        background-color: rgba(99, 102, 241, 0.1);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+    .info-box strong {
+        color: var(--text-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <a href="{% url 'chat_home' %}" class="back-btn">←</a>
+        <h1>Settings</h1>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="success-message">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- AI Provider Selection -->
+        <div class="settings-section">
+            <h2 class="section-title">AI Provider</h2>
+            <p class="help-text" style="margin-bottom: 16px;">Choose which AI backend to use for chat completions.</p>
+            
+            {% for provider in available_providers %}
+            <label class="provider-card {% if settings.ai_provider == provider.id %}selected{% endif %}" for="provider_{{ provider.id }}">
+                <input type="radio" id="provider_{{ provider.id }}" name="ai_provider" value="{{ provider.id }}"
+                       {% if settings.ai_provider == provider.id %}checked{% endif %}
+                       onchange="toggleAzureConfig()">
+                <div class="provider-info">
+                    <div class="provider-name">{{ provider.name }}</div>
+                    <div class="provider-description">{{ provider.description }}</div>
+                </div>
+                <span class="provider-status {% if provider.available %}available{% else %}unavailable{% endif %}">
+                    {% if provider.available %}Available{% else %}Not Configured{% endif %}
+                </span>
+            </label>
+            {% empty %}
+            <label class="provider-card selected" for="provider_foundry_local">
+                <input type="radio" id="provider_foundry_local" name="ai_provider" value="foundry_local" checked>
+                <div class="provider-info">
+                    <div class="provider-name">Foundry Local</div>
+                    <div class="provider-description">Local AI models via Microsoft Foundry Local</div>
+                </div>
+            </label>
+            <label class="provider-card" for="provider_azure_openai">
+                <input type="radio" id="provider_azure_openai" name="ai_provider" value="azure_openai"
+                       onchange="toggleAzureConfig()">
+                <div class="provider-info">
+                    <div class="provider-name">Azure OpenAI</div>
+                    <div class="provider-description">Cloud AI via Azure OpenAI Service</div>
+                </div>
+            </label>
+            {% endfor %}
+
+            <!-- Azure OpenAI Configuration -->
+            <div id="azure-config" class="azure-config {% if settings.ai_provider == 'azure_openai' %}visible{% endif %}">
+                <div class="azure-config-title">Azure OpenAI Configuration</div>
+                
+                <div class="info-box">
+                    <strong>Note:</strong> Leave fields empty to use environment variables (AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, etc.). 
+                    Fill them in only if you want to use your own Azure OpenAI credentials.
+                </div>
+
+                <div class="form-group">
+                    <label for="azure_openai_endpoint">Azure OpenAI Endpoint</label>
+                    <input type="url" id="azure_openai_endpoint" name="azure_openai_endpoint" 
+                           value="{{ settings.azure_openai_endpoint }}"
+                           placeholder="https://your-resource.openai.azure.com/">
+                    <p class="help-text">Your Azure OpenAI resource endpoint URL.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="azure_openai_api_key">API Key</label>
+                    <input type="password" id="azure_openai_api_key" name="azure_openai_api_key" 
+                           value="{{ settings.azure_openai_api_key }}"
+                           placeholder="Enter your API key">
+                    <p class="help-text">Your Azure OpenAI API key. Leave empty to use environment variable.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="azure_openai_deployment">Deployment Name</label>
+                    <input type="text" id="azure_openai_deployment" name="azure_openai_deployment" 
+                           value="{{ settings.azure_openai_deployment }}"
+                           placeholder="gpt-4o">
+                    <p class="help-text">The name of your Azure OpenAI model deployment.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Settings -->
+        <div class="settings-section">
+            <h2 class="section-title">AI Model Settings</h2>
+            
+            <div class="form-group">
+                <label for="default_model">Default Model</label>
+                <select id="default_model" name="default_model">
+                    {% for model in models %}
+                    <option value="{{ model.alias }}" {% if settings.default_model == model.alias %}selected{% endif %}>
+                        {{ model.alias }}
+                    </option>
+                    {% empty %}
+                    <option value="phi-4-mini">phi-4-mini (default)</option>
+                    {% endfor %}
+                </select>
+                <p class="help-text">The model that will be used by default for new conversations.</p>
+            </div>
+
+            <div class="form-group">
+                <label for="system_prompt">System Prompt</label>
+                <textarea id="system_prompt" name="system_prompt">{{ settings.system_prompt }}</textarea>
+                <p class="help-text">This prompt sets the behavior and personality of the AI assistant.</p>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2 class="section-title">Agent Features</h2>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enable_web_search" name="enable_web_search" 
+                           {% if settings.enable_web_search %}checked{% endif %}>
+                    <label for="enable_web_search">Enable Web Search Agent</label>
+                </div>
+                <p class="help-text">When enabled, the AI can search the web for up-to-date information.</p>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enable_code_execution" name="enable_code_execution"
+                           {% if settings.enable_code_execution %}checked{% endif %}>
+                    <label for="enable_code_execution">Enable Code Execution Agent</label>
+                </div>
+                <p class="help-text">When enabled, the AI can execute Python code snippets to verify solutions.</p>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{% url 'chat_home' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleAzureConfig() {
+    const azureRadio = document.getElementById('provider_azure_openai');
+    const azureConfig = document.getElementById('azure-config');
+    
+    if (azureRadio && azureConfig) {
+        if (azureRadio.checked) {
+            azureConfig.classList.add('visible');
+        } else {
+            azureConfig.classList.remove('visible');
+        }
+    }
+    
+    // Update provider card styling
+    document.querySelectorAll('.provider-card').forEach(card => {
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio && radio.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleAzureConfig();
+});
+</script>
+{% endblock %}

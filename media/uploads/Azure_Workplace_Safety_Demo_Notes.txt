@@ -1,0 +1,291 @@
+
+AZURE WORKPLACE HEALTH & SAFETY DEMO - MY DEPLOYMENT NOTES
+===========================================================
+Repository: https://github.com/Azure-Samples/IoTDemos/tree/master/WorkplaceHealthAndSafetyDemo
+Date Deployed: [Add date]
+
+WHAT THIS PROJECT DOES
+-----------------------
+This is an Azure IoT demo that monitors workplace safety using:
+- Vision AI for detecting safety violations (PPE detection, social distancing)
+- Azure Maps for geofencing and location analytics
+- Time Series Insights for monitoring trends
+- IoT Hub for device management and telemetry
+
+Main scenarios:
+1. Custom Vision AI - detect if workers are wearing proper safety equipment
+2. Azure Maps - track worker locations and alert when they enter/exit zones
+3. Real-time telemetry visualization
+
+
+STEP 1: CLONED THE REPO
+------------------------
+Command I ran:
+git clone https://github.com/Azure-Samples/IoTDemos.git
+cd IoTDemos/WorkplaceHealthAndSafetyDemo
+
+[INSERT SCREENSHOT: Terminal with clone command]
+
+
+STEP 2: AZURE RESOURCE DEPLOYMENT
+----------------------------------
+Used the ARM template to deploy all resources at once
+
+What got deployed:
+- IoT Hub
+- Stream Analytics Jobs (Edge + Cloud)
+- SQL Database & SQL Server
+- Logic Apps
+- Time Series Insights Environment
+- Azure Maps Account
+- Storage Account
+- App Service Plan
+- Container Registry
+- Function App
+
+Azure Portal steps:
+1. Clicked the "Deploy to Azure" button in README
+2. Created new resource group: [my resource group name]
+3. Selected region: [my region]
+4. Set prefix: [my prefix]
+5. Waited for deployment to complete (~10-15 mins)
+
+[INSERT SCREENSHOT: ARM template deployment screen]
+[INSERT SCREENSHOT: Deployment complete notification]
+[INSERT SCREENSHOT: Resource group showing all deployed resources]
+
+
+STEP 3: POST-DEPLOYMENT CONFIGURATION
+--------------------------------------
+
+3a. IoT Hub Consumer Groups Setup
+- Went to IoT Hub resource
+- Events > Built-in endpoints
+- Added consumer groups: "tsi" and "asa"
+
+[INSERT SCREENSHOT: Consumer groups configuration]
+
+3b. IoT Hub Event Subscription
+- Created event subscription named "iothubalerts"
+- Selected only "Device Telemetry" event type
+- Set endpoint type to Web Hook
+- Connected to Logic App
+
+[INSERT SCREENSHOT: Event subscription setup]
+
+3c. SQL Database Schema
+- Opened Query Editor in SQL Database
+- Used login: theadmin / M1cro$oft2020
+- Ran the script.sql file from repo's sql folder
+- Verified tables and stored procedures were created
+
+[INSERT SCREENSHOT: SQL query editor with schema]
+[INSERT SCREENSHOT: Created tables list]
+
+3d. Office365 Connection for Logic Apps
+- Went to Logic Apps in resource group
+- Authorized Office365 connection for email alerts
+- Tested connection
+
+[INSERT SCREENSHOT: Logic App O365 authorization]
+
+3e. Stream Analytics Jobs Configuration
+- Edge Stream Analytics Job: Published to storage container "edgemodules"
+- Cloud Stream Analytics Job: Started and verified running
+
+[INSERT SCREENSHOT: Stream Analytics jobs status]
+
+
+STEP 4: AZURE MAPS SETUP
+-------------------------
+- Got Azure Maps account key from deployed resource
+- Set up geofence in Maps Data registry
+- Configured the web app with Maps subscription key
+
+Settings I used:
+- Maps Account Key: [redacted]
+- Geofence upload ID: [my ID]
+
+[INSERT SCREENSHOT: Azure Maps account keys]
+[INSERT SCREENSHOT: Geofence configuration]
+
+
+STEP 5: TIME SERIES INSIGHTS CONFIGURATION
+-------------------------------------------
+5a. Event Source Setup
+- Added IoT Hub as event source
+- Consumer group: tsi
+- Timestamp property: timestamp
+- Started ingestion
+
+[INSERT SCREENSHOT: TSI event source configuration]
+
+5b. Data Access Policies
+- Added myself as contributor
+- Verified I could access TSI Explorer
+
+[INSERT SCREENSHOT: Access policies]
+
+5c. TSI Model Setup
+- Opened TSI Explorer
+- Uploaded instances.json from deployment/tsi folder
+- Verified instances appeared
+
+[INSERT SCREENSHOT: TSI Explorer with instances]
+
+
+STEP 6: VISION AI DEVKIT SETUP (if using physical device)
+----------------------------------------------------------
+OR
+STEP 6: SIMULATED DEVICE SETUP (if testing without hardware)
+-------------------------------------------------------------
+[Note to self: Document which path I took]
+
+6a. Created IoT Edge Device in IoT Hub
+Device ID: [my device ID]
+Connection string: [saved securely]
+
+[INSERT SCREENSHOT: IoT Edge device creation]
+
+6b. VS Code Setup
+- Installed Azure IoT Tools extension
+- Connected to Container Registry
+- Built and deployed edge solution
+
+Commands I ran:
+[list actual docker commands used]
+
+[INSERT SCREENSHOT: VS Code with IoT Edge solution]
+[INSERT SCREENSHOT: Container Registry showing images]
+
+
+STEP 7: CUSTOM VISION PROJECT (Optional)
+-----------------------------------------
+If I trained my own model:
+- Created Custom Vision project
+- Uploaded training images
+- Tagged images for PPE detection
+- Trained model
+- Exported model to edge device
+
+[INSERT SCREENSHOT: Custom Vision project]
+[INSERT SCREENSHOT: Training results]
+
+
+STEP 8: TESTING THE DEPLOYMENT
+-------------------------------
+
+Test 1: Device Connectivity
+- Verified device connected to IoT Hub
+- Checked device twin
+- Monitored telemetry stream
+
+[INSERT SCREENSHOT: IoT Hub device connection status]
+[INSERT SCREENSHOT: Telemetry data in portal]
+
+Test 2: Vision AI Detection
+- Sent test images to device
+- Verified AI inference results
+- Checked detection confidence scores
+
+[INSERT SCREENSHOT: Vision AI detection results]
+
+Test 3: Azure Maps Geofencing
+- Used web app to simulate device movement
+- Triggered geofence entry/exit events
+- Verified alerts were sent
+
+[INSERT SCREENSHOT: Maps web app with geofence]
+[INSERT SCREENSHOT: Geofence alert email]
+
+Test 4: Time Series Insights
+- Opened TSI Explorer
+- Queried telemetry data
+- Created visualizations
+
+[INSERT SCREENSHOT: TSI Explorer with data visualization]
+
+Test 5: Stream Analytics Output
+- Checked SQL database for processed data
+- Verified Stream Analytics job metrics
+
+[INSERT SCREENSHOT: SQL database query results]
+[INSERT SCREENSHOT: Stream Analytics metrics]
+
+
+STEP 9: CONSOLE APP FOR DATA GENERATION (Optional)
+---------------------------------------------------
+If I used the console app to generate sample data:
+
+- Opened Visual Studio
+- Loaded DeviceDataSender project
+- Updated connection string
+- Ran app to generate telemetry
+
+[INSERT SCREENSHOT: Console app running]
+[INSERT SCREENSHOT: Generated data in TSI]
+
+
+ISSUES I RAN INTO
+------------------
+
+Issue 1: [Describe any problems]
+How I fixed it: [Solution]
+
+Issue 2: [Describe any problems]
+How I fixed it: [Solution]
+
+[INSERT SCREENSHOT: Error messages or solutions]
+
+
+FINAL RESULTS
+-------------
+What's working:
+✓ [Feature 1]
+✓ [Feature 2]
+✓ [Feature 3]
+
+Performance notes:
+- Latency: [observe latency]
+- Data throughput: [note throughput]
+- Alert response time: [note timing]
+
+[INSERT SCREENSHOT: Overall dashboard view]
+[INSERT SCREENSHOT: End-to-end demo in action]
+
+
+THINGS TO REMEMBER FOR NEXT TIME
+---------------------------------
+- [Note 1]
+- [Note 2]
+- [Note 3]
+
+
+USEFUL LINKS & COMMANDS
+------------------------
+- Repository: https://github.com/Azure-Samples/IoTDemos/tree/master/WorkplaceHealthAndSafetyDemo
+- My Resource Group: [name]
+- IoT Hub name: [name]
+- SQL Server: [name]
+- Storage Account: [name]
+
+Quick commands I used:
+git clone https://github.com/Azure-Samples/IoTDemos.git
+az login
+az iot hub monitor-events --hub-name [my-hub-name]
+docker build -t [image-name] .
+docker push [registry]/[image-name]
+
+
+CLEANUP (When done testing)
+----------------------------
+To delete everything:
+1. Go to Azure Portal
+2. Delete the resource group: [my resource group name]
+3. Confirm deletion
+4. Wait for deletion to complete (~5 mins)
+
+Cost estimate for running this: [note costs]
+
+===========================================================
+END OF NOTES
