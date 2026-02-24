@@ -229,6 +229,14 @@ class AzureOpenAIProvider(AIProvider):
         
         return deployments
     
+    def _is_reasoning_model(self, model_name: str) -> bool:
+        """Check if the model is a reasoning model (o1, o3, o4 series)"""
+        if not model_name:
+            return False
+        model_lower = model_name.lower()
+        # Reasoning models start with 'o' followed by a number
+        return model_lower.startswith(('o1', 'o3', 'o4'))
+    
     def chat_completion(
         self,
         messages: List[Dict],
@@ -243,12 +251,21 @@ class AzureOpenAIProvider(AIProvider):
             if stream:
                 return self._stream_completion(messages, deployment, temperature, max_tokens)
             
-            response = self._client.chat.completions.create(
-                model=deployment,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
+            # Build request parameters
+            params = {
+                'model': deployment,
+                'messages': messages,
+            }
+            
+            # Reasoning models (o1, o3, o4) use different parameters
+            if self._is_reasoning_model(deployment):
+                params['max_completion_tokens'] = max_tokens
+                # Reasoning models don't support temperature
+            else:
+                params['max_tokens'] = max_tokens
+                params['temperature'] = temperature
+            
+            response = self._client.chat.completions.create(**params)
             return response.choices[0].message.content
         except Exception as e:
             logger.error(f"Azure OpenAI chat completion error: {e}")
@@ -262,13 +279,21 @@ class AzureOpenAIProvider(AIProvider):
         max_tokens: int
     ) -> Generator:
         try:
-            response = self._client.chat.completions.create(
-                model=deployment,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True
-            )
+            # Build request parameters
+            params = {
+                'model': deployment,
+                'messages': messages,
+                'stream': True,
+            }
+            
+            # Reasoning models (o1, o3, o4) use different parameters
+            if self._is_reasoning_model(deployment):
+                params['max_completion_tokens'] = max_tokens
+            else:
+                params['max_tokens'] = max_tokens
+                params['temperature'] = temperature
+            
+            response = self._client.chat.completions.create(**params)
             for chunk in response:
                 if chunk.choices and chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
