@@ -168,6 +168,15 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# CSRF Trusted Origins (required for POST requests in production)
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+# Add Azure App Service hostname if present
+if os.getenv('WEBSITE_HOSTNAME'):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.getenv('WEBSITE_HOSTNAME')}")
+
 # Login URL for session auth
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
